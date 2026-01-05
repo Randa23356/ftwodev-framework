@@ -336,8 +336,17 @@ class Console
         $this->info("Username: {$config['username']}");
         
         try {
-            // Test connection without database first
-            $dsn = "mysql:host={$config['host']};port={$config['port']};charset={$config['charset']}";
+            // Try socket connection first (for XAMPP, MAMP, etc.)
+            $socketPath = $this->findSocketPath();
+            if ($socketPath && file_exists($socketPath)) {
+                $dsn = "mysql:unix_socket={$socketPath};charset={$config['charset']}";
+                $this->info("Using socket: {$socketPath}");
+            } else {
+                // Fallback to TCP connection
+                $dsn = "mysql:host={$config['host']};port={$config['port']};charset={$config['charset']}";
+                $this->info("Using TCP: {$config['host']}:{$config['port']}");
+            }
+            
             $pdo = new \PDO($dsn, $config['username'], $config['password'], $config['options']);
             $this->success("✅ MySQL server is running and accessible!");
             
@@ -347,7 +356,11 @@ class Console
                 $this->success("✅ Database '{$config['dbname']}' exists!");
                 
                 // Test full connection
-                $fullDsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset={$config['charset']}";
+                if ($socketPath && file_exists($socketPath)) {
+                    $fullDsn = "mysql:unix_socket={$socketPath};dbname={$config['dbname']};charset={$config['charset']}";
+                } else {
+                    $fullDsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset={$config['charset']}";
+                }
                 $fullPdo = new \PDO($fullDsn, $config['username'], $config['password'], $config['options']);
                 $this->success("✅ Full database connection successful!");
                 
@@ -874,6 +887,42 @@ class Console
         $this->info("Refreshing framework classes... 🔄");
         shell_exec('composer dump-autoload');
         $this->success("Class map rebuilt successfully! Everything is synced.");
+    }
+
+    private function findSocketPath()
+    {
+        $config = require __DIR__ . '/../../config/database.php';
+        
+        // If socket is explicitly set in config, use it
+        if (!empty($config['socket'])) {
+            return $config['socket'];
+        }
+        
+        // Common socket paths for different systems
+        $socketPaths = [
+            // XAMPP paths
+            '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock',
+            '/opt/lampp/var/mysql/mysql.sock',
+            '/Applications/MAMP/Library/tmp/mysql/mysql.sock',
+            '/Applications/MAMP/tmp/mysql/mysql.sock',
+            
+            // Homebrew paths
+            '/opt/homebrew/var/run/mysql/mysql.sock',
+            '/usr/local/var/run/mysql/mysql.sock',
+            
+            // System paths
+            '/var/run/mysqld/mysqld.sock',
+            '/var/lib/mysql/mysql.sock',
+            '/tmp/mysql.sock',
+        ];
+        
+        foreach ($socketPaths as $socketPath) {
+            if (file_exists($socketPath)) {
+                return $socketPath;
+            }
+        }
+        
+        return null;
     }
 }
 

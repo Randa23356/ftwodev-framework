@@ -54,13 +54,57 @@ class ModelBase
         $config = \Engine\Boot::config('database');
         
         try {
-            $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset={$config['charset']}";
+            // Try socket connection first (for XAMPP, MAMP, etc.)
+            $socketPath = $this->findSocketPath();
+            if ($socketPath && file_exists($socketPath)) {
+                $dsn = "mysql:unix_socket={$socketPath};dbname={$config['dbname']};charset={$config['charset']}";
+            } else {
+                // Fallback to TCP connection
+                $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['dbname']};charset={$config['charset']}";
+            }
+            
             self::$db = new PDO($dsn, $config['username'], $config['password']);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             self::$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new \Exception("Database Connection Error: " . $e->getMessage());
         }
+    }
+
+    private function findSocketPath()
+    {
+        $config = \Engine\Boot::config('database');
+        
+        // If socket is explicitly set in config, use it
+        if (!empty($config['socket'])) {
+            return $config['socket'];
+        }
+        
+        // Common socket paths for different systems
+        $socketPaths = [
+            // XAMPP paths
+            '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock',
+            '/opt/lampp/var/mysql/mysql.sock',
+            '/Applications/MAMP/Library/tmp/mysql/mysql.sock',
+            '/Applications/MAMP/tmp/mysql/mysql.sock',
+            
+            // Homebrew paths
+            '/opt/homebrew/var/run/mysql/mysql.sock',
+            '/usr/local/var/run/mysql/mysql.sock',
+            
+            // System paths
+            '/var/run/mysqld/mysqld.sock',
+            '/var/lib/mysql/mysql.sock',
+            '/tmp/mysql.sock',
+        ];
+        
+        foreach ($socketPaths as $socketPath) {
+            if (file_exists($socketPath)) {
+                return $socketPath;
+            }
+        }
+        
+        return null;
     }
 
     // Static query methods
