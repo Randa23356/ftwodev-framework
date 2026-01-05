@@ -14,9 +14,11 @@ use Engine\Router;
  * /name/action -> NameController::action()
  */
 
-Router::get('/', function() {
-    return view('welcome');
-});
+Router::get('/', 'WelcomeController@index');
+
+
+// Default Routes
+Router::get('/about', 'HomeController@about');
 
 // Examples (Manual):
 // Router::get('/login', 'AuthController@loginForm');
