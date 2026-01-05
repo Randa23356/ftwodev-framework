@@ -1,5 +1,8 @@
 <?php
 
+// Include autoloader first
+require_once __DIR__ . '/vendor/autoload.php';
+
 $colors = [
     'green'  => "\033[38;5;48m",    // Emerald
     'blue'   => "\033[38;5;45m",     // Cyan-Blue
