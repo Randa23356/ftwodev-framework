@@ -96,7 +96,8 @@ echo "  {$colors['white']}  FTwoDev Framework Successfully Configured! 🚀 {$co
 echo "  {$colors['green']}----------------------------------------------------------------{$colors['reset']}\n\n";
 
 echo "  {$colors['white']}NEXT STEPS:{$colors['reset']}\n";
-echo "  1. {$colors['blue']}composer dump-autoload{$colors['reset']}  - Refresh classes\n";
+echo "  1. {$colors['blue']}php ftwo ignite:refresh{$colors['reset']}  - Sync framework classes\n";
+
 echo "  2. {$colors['blue']}php ftwo ignite{$colors['reset']}            - Start dev engine\n";
 if (!$installBloom) {
     echo "  3. {$colors['blue']}php ftwo ignite:bloom{$colors['reset']}      - Install Auth (Whenever you need it)\n";
