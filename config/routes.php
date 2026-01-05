@@ -26,13 +26,6 @@ Router::get('/about', 'HomeController@about');
 
 
 
-// Auth Routes (Added by Bloom)
-Router::get('/login', 'AuthController@showLogin');
-Router::post('/login', 'AuthController@login');
-Router::get('/register', 'AuthController@showRegister');
-Router::post('/register', 'AuthController@register');
-Router::get('/logout', 'AuthController@logout');
-Router::get('/dashboard', 'DashboardController@index');
 
 // Magic Routes (Automatic):
 // /dashboard       -> DashboardController::index()
