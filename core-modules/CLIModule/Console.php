@@ -324,7 +324,15 @@ class Console
             $this->success("AuthMiddleware created successfully.");
         }
         
-        // 4. Create User Migration
+        // 4. Create User Model
+        $this->info("Creating User model...");
+        if (file_exists($stubsPath . 'UserModel.stub')) {
+            $userModelStub = file_get_contents($stubsPath . 'UserModel.stub');
+            file_put_contents($projectsPath . 'Models/User.php', $userModelStub);
+            $this->success("User model created successfully.");
+        }
+        
+        // 5. Create User Migration
         $this->info("Creating User migration...");
         $timestamp = date('Y_m_d_His');
         $migrationFileName = $timestamp . '_create_users_table.php';
@@ -332,7 +340,7 @@ class Console
         file_put_contents($projectsPath . 'Migrations/' . $migrationFileName, $migrationStub);
         $this->success("User migration created: $migrationFileName");
         
-        // 5. Create Auth Views
+        // 6. Create Auth Views
         $viewsPath = $projectsPath . 'Views/auth/';
         if (!is_dir($viewsPath)) {
             mkdir($viewsPath, 0755, true);

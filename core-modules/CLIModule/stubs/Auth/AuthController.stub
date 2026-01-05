@@ -41,13 +41,24 @@ class AuthController extends ControllerBase
             return $this->view('auth/register', ['error' => 'All fields are required']);
         }
 
-        $db = new \Engine\ModelBase();
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        // Check if user already exists
+        $user = new User();
+        if ($user->findByEmail($email) || $user->findByUsername($username)) {
+            return $this->view('auth/register', ['error' => 'User already exists']);
+        }
 
-        $db->query("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", [
-            $username, $email, $hashedPassword
-        ]);
+        // Create user using ORM
+        $user = new User();
+        $userData = [
+            'username' => $username,
+            'email' => $email,
+            'password' => password_hash($password, PASSWORD_BCRYPT)
+        ];
+        
+        $user->fill($userData);
+        $user->save();
 
+        // Auto login after registration
         Auth::attempt($username, $password);
         return redirect('/dashboard');
     }
