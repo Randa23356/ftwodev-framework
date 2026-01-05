@@ -132,8 +132,53 @@ class Router
                     return $controller->$method();
                 }
             }
+            
+            // Controller doesn't exist - provide helpful message
+            if (!class_exists($controllerName)) {
+                $this->showSetupHelp($parts[0]);
+            }
         }
+        
         throw new \Exception("Action not found: " . json_encode($action));
+    }
+    
+    private function showSetupHelp($controllerName)
+    {
+        $controllerFile = __DIR__ . '/../projects/Controllers/' . $controllerName . '.php';
+        
+        echo "<div style='font-family: system-ui; max-width: 800px; margin: 2rem auto; padding: 2rem; background: #f8fafc; border-radius: 12px; border-left: 4px solid #ef4444;'>";
+        echo "<h1 style='color: #dc2626; margin-bottom: 1rem;'>⚠️ Controller Not Found</h1>";
+        echo "<p style='color: #64748b; margin-bottom: 1.5rem;'><strong>Controller '<code>$controllerName</code>' does not exist.</strong></p>";
+        
+        echo "<div style='background: #1e293b; color: #94a3b8; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;'>";
+        echo "<p style='margin: 0; font-family: monospace; font-size: 0.9rem;'>Expected file: <code style='color: #f8fafc;'>projects/Controllers/$controllerName.php</code></p>";
+        echo "</div>";
+        
+        echo "<h3 style='color: #374151; margin-bottom: 1rem;'>🔧 Quick Fix:</h3>";
+        echo "<ol style='color: #64748b; line-height: 1.6;'>";
+        echo "<li>Run setup command to create basic controllers:</li>";
+        echo "<div style='background: #020617; color: #94a3b8; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0; font-family: monospace;'>";
+        echo "<span style='color: #10b981;'>➜</span> <span style='color: #f8fafc;'>php ftwo ignite:setup</span>";
+        echo "</div>";
+        echo "<li>Or create the controller manually:</li>";
+        echo "<div style='background: #020617; color: #94a3b8; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0; font-family: monospace;'>";
+        echo "<span style='color: #10b981;'>➜</span> <span style='color: #f8fafc;'>php ftwo craft:controller $controllerName</span>";
+        echo "</div>";
+        echo "</ol>";
+        
+        echo "<h3 style='color: #374151; margin-bottom: 1rem;'>📋 Available Commands:</h3>";
+        echo "<ul style='color: #64748b; line-height: 1.6;'>";
+        echo "<li><code style='background: #e5e7eb; padding: 0.25rem 0.5rem; border-radius: 4px;'>php ftwo ignite:setup</code> - Create basic structure</li>";
+        echo "<li><code style='background: #e5e7eb; padding: 0.25rem 0.5rem; border-radius: 4px;'>php ftwo craft:controller Name</code> - Create controller</li>";
+        echo "<li><code style='background: #e5e7eb; padding: 0.25rem 0.5rem; border-radius: 4px;'>php ftwo craft:model Name</code> - Create model</li>";
+        echo "</ul>";
+        
+        echo "<div style='margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;'>";
+        echo "<p style='color: #6b7280; font-size: 0.9rem; margin: 0;'>💡 <strong>Tip:</strong> Run <code style='background: #e5e7eb; padding: 0.25rem 0.5rem; border-radius: 4px;'>php ftwo ignite:setup</code> to create the basic framework structure including WelcomeController and HomeController.</p>";
+        echo "</div>";
+        
+        echo "</div>";
+        exit;
     }
 
     private function abort($code)

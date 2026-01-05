@@ -277,23 +277,22 @@ function showBloomInstall() {
         z-index: 10000; backdrop-filter: blur(10px);
     `;
     
-    modal.innerHTML = \`
-        <div style="background: white; padding: 3rem; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-            <div style="width: 64px; height: 64px; background: rgba(5, 150, 105, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 0 auto 2rem; font-size: 2rem;">
-                🌸
-            </div>
-            <h3 style="margin-bottom: 1rem; color: var(--slate);">Install Bloom Auth System</h3>
-            <p style="color: #64748b; margin-bottom: 2rem;">Run this command in your terminal to install the complete authentication system:</p>
-            <div style="background: #020617; color: #94a3b8; padding: 1.5rem; border-radius: 12px; font-family: 'JetBrains Mono', monospace; margin-bottom: 2rem; text-align: left;">
-                <div style="margin-bottom: 0.5rem;"><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite:bloom</span></div>
-                <div style="margin-bottom: 0.5rem;"><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite:migrate</span></div>
-                <div><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite</span></div>
-            </div>
-            <button onclick="this.parentElement.parentElement.remove()" style="background: var(--primary); color: white; border: none; padding: 0.75rem 2rem; border-radius: 12px; font-weight: 600; cursor: pointer;">
-                Got it!
-            </button>
-        </div>
-    \`;
+    modal.innerHTML = 
+        '<div style="background: white; padding: 3rem; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">' +
+            '<div style="width: 64px; height: 64px; background: rgba(5, 150, 105, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 0 auto 2rem; font-size: 2rem;">' +
+                '🌸' +
+            '</div>' +
+            '<h3 style="margin-bottom: 1rem; color: var(--slate);">Install Bloom Auth System</h3>' +
+            '<p style="color: #64748b; margin-bottom: 2rem;">Run this command in your terminal to install the complete authentication system:</p>' +
+            '<div style="background: #020617; color: #94a3b8; padding: 1.5rem; border-radius: 12px; font-family: \'JetBrains Mono\', monospace; margin-bottom: 2rem; text-align: left;">' +
+                '<div style="margin-bottom: 0.5rem;"><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite:bloom</span></div>' +
+                '<div style="margin-bottom: 0.5rem;"><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite:migrate</span></div>' +
+                '<div><span style="color: var(--primary);">➜</span> <span style="color: #f8fafc; font-weight: 600;">php ftwo ignite</span></div>' +
+            '</div>' +
+            '<button onclick="this.parentElement.parentElement.remove()" style="background: var(--primary); color: white; border: none; padding: 0.75rem 2rem; border-radius: 12px; font-weight: 600; cursor: pointer;">' +
+                'Got it!' +
+            '</button>' +
+        '</div>';
     
     document.body.appendChild(modal);
     modal.onclick = (e) => e.target === modal && modal.remove();
