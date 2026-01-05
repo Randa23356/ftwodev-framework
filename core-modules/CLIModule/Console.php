@@ -42,6 +42,15 @@ class Console
             case 'craft:service':
                 $this->makeService($this->args[2] ?? null);
                 break;
+            case 'craft:migration':
+                $this->makeMigration($this->args[2] ?? null);
+                break;
+            case 'ignite:migrate':
+                $this->migrate();
+                break;
+            case 'ignite:rollback':
+                $this->rollback();
+                break;
             case 'ignite': // Creative rename for serve
             case 'serve':  // Keep strict alias
                 $this->serve();
@@ -70,10 +79,13 @@ class Console
     {
         echo "{$this->colors['yellow']}Usage:{$this->colors['reset']}\n";
         echo "  php ftwo ignite                Start the development server\n";
+        echo "  php ftwo ignite:migrate        Run database migrations\n";
+        echo "  php ftwo ignite:rollback       Rollback last migration\n";
         echo "  php ftwo craft:controller Name Create a new controller\n";
         echo "  php ftwo craft:model Name      Create a new model\n";
         echo "  php ftwo craft:view Name       Create a new view\n";
         echo "  php ftwo craft:service Name    Create a new service\n";
+        echo "  php ftwo craft:migration Name  Create a new migration\n";
     }
 
     private function serve()
@@ -125,7 +137,6 @@ class Console
         if (!$name) die("{$this->colors['red']}Error: Name required.{$this->colors['reset']}\n");
         $path = __DIR__ . '/../../projects/Services/' . $name . '.php';
         
-        // Ensure Services directory exists
         if (!file_exists(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
@@ -137,4 +148,113 @@ class Console
         file_put_contents($path, $template);
         echo "{$this->colors['green']}Service $name crafted successfully.{$this->colors['reset']}\n";
     }
+
+    private function makeMigration($name)
+    {
+        if (!$name) die("{$this->colors['red']}Error: Name required.{$this->colors['reset']}\n");
+        $timestamp = date('Y_m_d_His');
+        $fileName = $timestamp . '_' . $name . '.php';
+        $path = __DIR__ . '/../../projects/Migrations/' . $fileName;
+
+        if (!file_exists(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
+        
+        $template = "<?php\n\nnamespace Projects\\Migrations;\n\nuse Engine\\MigrationBase;\n\nclass $className extends MigrationBase\n{\n    public function up()\n    {\n        // \$this->execute(\"CREATE TABLE ...\");\n    }\n\n    public function down()\n    {\n        // \$this->execute(\"DROP TABLE ...\");\n    }\n}\n";
+
+        file_put_contents($path, $template);
+        echo "{$this->colors['green']}Migration $fileName crafted successfully.{$this->colors['reset']}\n";
+    }
+
+    private function migrate()
+    {
+        $db = $this->getDatabaseConnection();
+        $this->ensureMigrationsTable($db);
+
+        $files = glob(__DIR__ . '/../../projects/Migrations/*.php');
+        sort($files);
+
+        $stmt = $db->query("SELECT migration FROM migrations");
+        $executed = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        $batch = time();
+        $count = 0;
+
+        foreach ($files as $file) {
+            $name = basename($file, '.php');
+            if (!in_array($name, $executed)) {
+                require_once $file;
+                $parts = explode('_', $name);
+                $className = "Projects\\Migrations\\" . str_replace(' ', '', ucwords(str_replace('_', ' ', implode('_', array_slice($parts, 4)))));
+                
+                $migration = new $className($db);
+                $migration->up();
+
+                $stmt = $db->prepare("INSERT INTO migrations (migration, batch) VALUES (?, ?)");
+                $stmt->execute([$name, $batch]);
+                
+                echo "{$this->colors['green']}Migrated: $name{$this->colors['reset']}\n";
+                $count++;
+            }
+        }
+
+        if ($count === 0) {
+            echo "{$this->colors['yellow']}Nothing to migrate.{$this->colors['reset']}\n";
+        }
+    }
+
+    private function rollback()
+    {
+        $db = $this->getDatabaseConnection();
+        $this->ensureMigrationsTable($db);
+
+        $stmt = $db->query("SELECT MAX(batch) FROM migrations");
+        $lastBatch = $stmt->fetchColumn();
+
+        if (!$lastBatch) {
+            echo "{$this->colors['yellow']}Nothing to rollback.{$this->colors['reset']}\n";
+            return;
+        }
+
+        $stmt = $db->prepare("SELECT migration FROM migrations WHERE batch = ? ORDER BY migration DESC");
+        $stmt->execute([$lastBatch]);
+        $migrations = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        foreach ($migrations as $name) {
+            $file = __DIR__ . '/../../projects/Migrations/' . $name . '.php';
+            if (file_exists($file)) {
+                require_once $file;
+                $parts = explode('_', $name);
+                $className = "Projects\\Migrations\\" . str_replace(' ', '', ucwords(str_replace('_', ' ', implode('_', array_slice($parts, 4)))));
+                
+                $migration = new $className($db);
+                $migration->down();
+
+                $stmt = $db->prepare("DELETE FROM migrations WHERE migration = ?");
+                $stmt->execute([$name]);
+
+                echo "{$this->colors['yellow']}Rolled back: $name{$this->colors['reset']}\n";
+            }
+        }
+    }
+
+    private function ensureMigrationsTable($db)
+    {
+        $db->exec("CREATE TABLE IF NOT EXISTS migrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            migration VARCHAR(255),
+            batch INT,
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    }
+
+    private function getDatabaseConnection()
+    {
+        $config = require __DIR__ . '/../../config/database.php';
+        $dsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
+        return new \PDO($dsn, $config['username'], $config['password'], $config['options']);
+    }
 }
+

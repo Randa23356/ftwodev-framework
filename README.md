@@ -59,11 +59,13 @@ The framework is organized to keep your code clean:
 ```
 /FDFramework
 ├─ /engine                 # The heart of the framework (Core)
-├─ /config                 # App, Database, and Routes configuration
+├─ /config                 # App, Database, Routes, and Middleware config
 ├─ /core-modules           # Built-in modules (Auth, Logger, CLI)
 ├─ /projects               # YOUR Application Code
 │    ├─ Controllers        # Logic
 │    ├─ Models             # Data
+│    ├─ Middlewares        # Filters
+│    ├─ Migrations         # Database Schema
 │    ├─ Services           # Business Logic
 │    └─ Views              # Templates (.ftwo.php)
 ├─ /public                 # Entry point
@@ -83,10 +85,25 @@ FTwoDev uses **Magic Routing** by default. You don't need to register every rout
 You can still define custom routes in `config/routes.php` if you need to override the magic.
 
 ```php
-Router::get('/', function() {
-    return view('welcome');
-});
+Router::get('/admin', 'AdminController@index')->middleware('auth');
 ```
+
+## 🛡️ Middleware
+
+Filter requests before they reach your controller. Global middlewares run on every request, while named middlewares can be assigned to specific routes.
+
+**Config:** `config/middleware.php`
+**Create:** `php ftwo craft:born` (just kidding, use `craft:controller` for now or create manually in `projects/Middlewares`).
+
+## 🗄️ Database Migrations
+
+Manage your schema via code. 
+
+1. **Craft:** `php ftwo craft:migration create_posts_table`
+2. **Edit:** Open the file in `projects/Migrations` and add your SQL.
+3. **Migrate:** `php ftwo ignite:migrate`
+4. **Rollback:** `php ftwo ignite:rollback`
+
 
 ## 🎨 Template Engine
 
