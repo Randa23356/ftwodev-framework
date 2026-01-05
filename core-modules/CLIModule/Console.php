@@ -618,8 +618,19 @@ class Console
         
         $projectsPath = __DIR__ . '/../../projects/';
         
+        // Ensure projects directory exists
+        if (!is_dir($projectsPath)) {
+            mkdir($projectsPath, 0755, true);
+        }
+        
+        // Ensure Controllers directory exists
+        $controllersPath = $projectsPath . 'Controllers';
+        if (!is_dir($controllersPath)) {
+            mkdir($controllersPath, 0755, true);
+        }
+        
         // 1. Create WelcomeController
-        $welcomeControllerPath = $projectsPath . 'Controllers/WelcomeController.php';
+        $welcomeControllerPath = $controllersPath . '/WelcomeController.php';
         if (!file_exists($welcomeControllerPath)) {
             $this->info("Creating WelcomeController...");
             $welcomeControllerContent = "<?php\n\nnamespace Projects\\Controllers;\n\nuse Engine\\ControllerBase;\n\nclass WelcomeController extends ControllerBase\n{\n    public function index()\n    {\n        return \$this->view('welcome');\n    }\n}\n";
@@ -630,7 +641,7 @@ class Console
         }
         
         // 2. Create HomeController
-        $homeControllerPath = $projectsPath . 'Controllers/HomeController.php';
+        $homeControllerPath = $controllersPath . '/HomeController.php';
         if (!file_exists($homeControllerPath)) {
             $this->info("Creating HomeController...");
             $homeControllerContent = "<?php\n\nnamespace Projects\\Controllers;\n\nuse Engine\\ControllerBase;\n\nclass HomeController extends ControllerBase\n{\n    public function index()\n    {\n        return \$this->view('welcome');\n    }\n\n    public function about()\n    {\n        return \$this->view('about');\n    }\n}\n";
