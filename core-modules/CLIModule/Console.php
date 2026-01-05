@@ -64,6 +64,12 @@ class Console
             case 'ignite:env':
                 $this->generateEnv();
                 break;
+            case 'db:check':
+                $this->checkDatabase();
+                break;
+            case 'db:setup':
+                $this->setupDatabase();
+                break;
             case 'make:session-table':
                 $this->makeSessionTable();
                 break;
@@ -111,7 +117,11 @@ class Console
         echo "    {$this->colors['green']}ignite:bloom{$this->colors['reset']}        Plant Bloom Auth Starter Kit\n";
         echo "    {$this->colors['green']}ignite:setup{$this->colors['reset']}        Setup basic framework structure\n";
         echo "    {$this->colors['green']}ignite:env{$this->colors['reset']}          Generate .env file from .env.example\n";
-    echo "    {$this->colors['green']}ignite:refresh{$this->colors['reset']}      Refresh & sync framework classes\n\n";
+        echo "    {$this->colors['green']}ignite:refresh{$this->colors['reset']}      Refresh & sync framework classes\n\n";
+
+        echo "  {$this->colors['blue']}DATABASE (Setup & Check){$this->colors['reset']}\n";
+        echo "    {$this->colors['green']}db:check{$this->colors['reset']}            Check database connection\n";
+        echo "    {$this->colors['green']}db:setup{$this->colors['reset']}            Setup database and create database\n\n";
 
         echo "  {$this->colors['blue']}CRAFT (Scaffolding){$this->colors['reset']}\n";
         echo "    {$this->colors['green']}craft:controller{$this->colors['reset']}   Create a new Controller\n";
@@ -313,11 +323,139 @@ class Console
         )");
     }
 
+    private function checkDatabase()
+    {
+        $this->banner();
+        $this->info("🔍 Checking database connection...");
+        
+        $config = require __DIR__ . '/../../config/database.php';
+        
+        $this->info("Database Configuration:");
+        $this->info("Host: {$config['host']}");
+        $this->info("Database: {$config['dbname']}");
+        $this->info("Username: {$config['username']}");
+        
+        try {
+            // Test connection without database first
+            $dsn = "mysql:host={$config['host']};charset={$config['charset']}";
+            $pdo = new \PDO($dsn, $config['username'], $config['password'], $config['options']);
+            $this->success("✅ MySQL server is running and accessible!");
+            
+            // Check if database exists
+            $stmt = $pdo->query("SHOW DATABASES LIKE '{$config['dbname']}'");
+            if ($stmt->rowCount() > 0) {
+                $this->success("✅ Database '{$config['dbname']}' exists!");
+                
+                // Test full connection
+                $fullDsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
+                $fullPdo = new \PDO($fullDsn, $config['username'], $config['password'], $config['options']);
+                $this->success("✅ Full database connection successful!");
+                
+                $this->info("\n🚀 Ready to run migrations:");
+                $this->info("php ftwo ignite:migrate");
+            } else {
+                $this->error("❌ Database '{$config['dbname']}' does not exist!");
+                $this->info("\n💡 To create database:");
+                $this->info("php ftwo db:setup");
+                $this->info("Or manually: mysql -u {$config['username']} -p -e \"CREATE DATABASE {$config['dbname']}\"");
+            }
+            
+        } catch (\PDOException $e) {
+            $this->error("❌ Database connection failed!");
+            $this->error("Error: " . $e->getMessage());
+            
+            if (strpos($e->getMessage(), 'No such file or directory') !== false) {
+                $this->error("MySQL server is not running or not installed.");
+                $this->info("\n🔧 To fix this:");
+                $this->info("1. Install MySQL: brew install mysql");
+                $this->info("2. Start MySQL: brew services start mysql");
+                $this->info("3. Check status: brew services list | grep mysql");
+                $this->info("4. Alternative: Use Docker");
+                $this->info("   docker run --name mysql-ftwo -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=ftwodev_db -p 3306:3306 -d mysql:8.0");
+            } elseif (strpos($e->getMessage(), 'Access denied') !== false) {
+                $this->error("Access denied for user '{$config['username']}'.");
+                $this->info("\n🔧 To fix this:");
+                $this->info("1. Check username/password in .env file");
+                $this->info("2. Grant privileges: mysql -u root -p");
+                $this->info("   CREATE USER '{$config['username']}'@'localhost' IDENTIFIED BY 'password';");
+                $this->info("   GRANT ALL PRIVILEGES ON *.* TO '{$config['username']}'@'localhost';");
+                $this->info("   FLUSH PRIVILEGES;");
+            }
+        }
+    }
+
+    private function setupDatabase()
+    {
+        $this->banner();
+        $this->info("🔧 Setting up database...");
+        
+        $config = require __DIR__ . '/../../config/database.php';
+        
+        try {
+            // Connect without database
+            $dsn = "mysql:host={$config['host']};charset={$config['charset']}";
+            $pdo = new \PDO($dsn, $config['username'], $config['password'], $config['options']);
+            
+            // Create database if not exists
+            $stmt = $pdo->query("CREATE DATABASE IF NOT EXISTS `{$config['dbname']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $this->success("✅ Database '{$config['dbname']}' created successfully!");
+            
+            // Test full connection
+            $fullDsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
+            $fullPdo = new \PDO($fullDsn, $config['username'], $config['password'], $config['options']);
+            $this->success("✅ Database connection test passed!");
+            
+            $this->info("\n🚀 Database is ready! Next steps:");
+            $this->info("1. php ftwo ignite:migrate    # Run migrations");
+            $this->info("2. php ftwo ignite:bloom      # Add auth system");
+            $this->info("3. php ftwo ignite            # Start development server");
+            
+        } catch (\PDOException $e) {
+            $this->error("❌ Database setup failed!");
+            $this->error("Error: " . $e->getMessage());
+            
+            if (strpos($e->getMessage(), 'No such file or directory') !== false) {
+                $this->error("MySQL server is not running!");
+                $this->info("\n🔧 Start MySQL first:");
+                $this->info("brew services start mysql");
+                $this->info("Or use Docker:");
+                $this->info("docker run --name mysql-ftwo -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=ftwodev_db -p 3306:3306 -d mysql:8.0");
+            }
+        }
+    }
+
     private function getDatabaseConnection()
     {
         $config = require __DIR__ . '/../../config/database.php';
         $dsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
-        return new \PDO($dsn, $config['username'], $config['password'], $config['options']);
+        
+        try {
+            return new \PDO($dsn, $config['username'], $config['password'], $config['options']);
+        } catch (\PDOException $e) {
+            $this->error("Database Connection Failed!");
+            $this->error("Error: " . $e->getMessage());
+            
+            if (strpos($e->getMessage(), 'No such file or directory') !== false) {
+                $this->error("MySQL server is not running or not installed.");
+                $this->info("To fix this:");
+                $this->info("1. Install MySQL: brew install mysql");
+                $this->info("2. Start MySQL: brew services start mysql");
+                $this->info("3. Or use Docker: docker run --name mysql -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 mysql:8.0");
+            } elseif (strpos($e->getMessage(), 'Unknown database') !== false) {
+                $this->error("Database '{$config['dbname']}' does not exist.");
+                $this->info("Create database: mysql -u {$config['username']} -p -e \"CREATE DATABASE {$config['dbname']}\"");
+            } elseif (strpos($e->getMessage(), 'Access denied') !== false) {
+                $this->error("Access denied for user '{$config['username']}'.");
+                $this->info("Check your username and password in .env file");
+            }
+            
+            $this->info("Check your .env file configuration:");
+            $this->info("DB_HOST={$config['host']}");
+            $this->info("DB_DATABASE={$config['dbname']}");
+            $this->info("DB_USERNAME={$config['username']}");
+            
+            exit(1);
+        }
     }
 
     private function installBloom()
