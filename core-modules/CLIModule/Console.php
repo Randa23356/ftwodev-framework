@@ -2,6 +2,8 @@
 
 namespace CoreModules\CLIModule;
 
+use Engine\Env;
+
 class Console
 {
     private $args;
@@ -18,6 +20,7 @@ class Console
     public function __construct($argv)
     {
         $this->args = $argv;
+        Env::load();
     }
 
     public function run()
